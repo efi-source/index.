@@ -5,185 +5,225 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>מערכת פיקוח בניה PRO</title>
     <style>
-        :root { --primary: #2c3e50; --accent: #3498db; --success: #27ae60; --danger: #e74c3c; --bg: #f4f7f6; }
-        body { font-family: 'Segoe UI', Arial, sans-serif; background-color: var(--bg); margin: 0; padding: 10px; color: var(--primary); }
-        .container { max-width: 1000px; margin: 0 auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        :root { --primary: #2c3e50; --accent: #3498db; --success: #27ae60; --danger: #e74c3c; --bg: #f0f2f5; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); margin: 0; padding-bottom: 70px; color: var(--primary); }
         
-        /* שעון וחיפוש */
-        .timer-box { text-align: center; padding: 15px; border: 2px solid #eee; border-radius: 10px; margin-bottom: 20px; background: #fff; }
-        #timerDisplay { font-size: 36px; font-weight: bold; color: var(--accent); display: block; }
-        
-        .search-section { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; background: #ebf2f7; padding: 15px; border-radius: 8px; }
-        
-        .btn { width: 100%; padding: 12px; font-size: 16px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; margin-top: 5px; }
-        .btn-start { background: var(--success); color: white; }
-        .btn-stop { background: var(--danger); color: white; display: none; }
-        
-        /* טבלה ותמונות */
-        .table-container { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
-        th, td { padding: 10px; border-bottom: 1px solid #ddd; text-align: right; }
-        .img-preview { width: 50px; height: 50px; object-fit: cover; border-radius: 4px; cursor: pointer; }
+        /* ניווט תחתון */
+        .nav-bar { position: fixed; bottom: 0; left: 0; right: 0; background: white; display: flex; justify-content: space-around; padding: 10px 0; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); z-index: 1000; }
+        .nav-item { border: none; background: none; color: #7f8c8d; cursor: pointer; font-size: 14px; display: flex; flex-direction: column; align-items: center; }
+        .nav-item.active { color: var(--accent); font-weight: bold; }
+        .nav-item i { font-size: 20px; margin-bottom: 4px; }
 
-        /* Modal */
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); justify-content: center; align-items: center; z-index: 1000; }
-        .modal-content { background: white; padding: 20px; border-radius: 10px; width: 90%; max-width: 450px; max-height: 90vh; overflow-y: auto; }
-        input, textarea { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        /* מסכים */
+        .screen { display: none; padding: 20px; animation: fadeIn 0.3s; }
+        .screen.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* כרטיסים ועיצוב */
+        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .timer-display { font-size: 45px; font-weight: bold; text-align: center; margin: 20px 0; color: var(--primary); }
+        
+        .btn { width: 100%; padding: 15px; border-radius: 10px; border: none; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s; margin-bottom: 10px; }
+        .btn-primary { background: var(--accent); color: white; }
+        .btn-success { background: var(--success); color: white; }
+        .btn-danger { background: var(--danger); color: white; }
+
+        /* טבלה ותמונות */
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 10px; overflow: hidden; }
+        th, td { padding: 12px; text-align: right; border-bottom: 1px solid #eee; font-size: 14px; }
+        .img-grid { display: flex; gap: 5px; flex-wrap: wrap; }
+        .thumbnail { width: 40px; height: 40px; object-fit: cover; border-radius: 4px; cursor: pointer; border: 1px solid #ddd; }
+
+        /* חלון תמונה גדול */
+        .lightbox { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 2000; justify-content: center; align-items: center; flex-direction: column; }
+        .lightbox img { max-width: 90%; max-height: 80%; border-radius: 5px; }
+        
+        input, textarea, select { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h2>🏗️ ניהול פיקוח בניה</h2>
-    
-    <div class="timer-box">
-        <span id="timerDisplay">00:00:00</span>
-        <button id="startBtn" class="btn btn-start" onclick="startWork()">התחל פיקוח באתר ▶️</button>
-        <button id="stopBtn" class="btn btn-stop" onclick="openReportModal()">סיים ודווח ⏹️</button>
+    <div id="screen-home" class="screen active">
+        <h2>🏠 דף הבית</h2>
+        <div class="card">
+            <div id="statusText" style="text-align: center;">מוכן להתחלת עבודה</div>
+            <div class="timer-display" id="mainTimer">00:00:00</div>
+            <button id="startBtn" class="btn btn-success" onclick="toggleTimer()">התחל עבודה ▶️</button>
+            <button id="stopBtn" class="btn btn-danger" style="display:none;" onclick="showReportModal()">סיים ודווח ⏹️</button>
+        </div>
+        
+        <div id="reportArea" class="card" style="display:none;">
+            <h3>📝 סיכום ביקור</h3>
+            <input type="text" id="projectName" placeholder="שם הפרויקט">
+            <textarea id="workNotes" placeholder="מה בוצע/ליקויים שנמצאו..."></textarea>
+            <label>צלם/צרף תמונות (ניתן לבחור כמה):</label>
+            <input type="file" id="imageFiles" accept="image/*" multiple capture="environment">
+            <button class="btn btn-primary" onclick="saveReport()">שמור דיווח במערכת</button>
+        </div>
     </div>
 
-    <div class="search-section">
-        <input type="text" id="searchInput" placeholder="חפש פרויקט או הערה..." oninput="renderTable()">
-        <input type="date" id="dateFilter" onchange="renderTable()">
+    <div id="screen-reports" class="screen">
+        <h2>📊 דוחות וחיפוש</h2>
+        <div class="card">
+            <input type="text" id="searchInput" placeholder="חפש לפי פרויקט..." oninput="renderReports()">
+            <button class="btn btn-primary" style="background:#2c3e50" onclick="exportToCSV()">ייצא לאקסל 📥</button>
+        </div>
+        <div id="reportsList"></div>
     </div>
 
-    <div class="table-container">
-        <table id="logsTable">
-            <thead>
-                <tr>
-                    <th>תאריך</th>
-                    <th>פרויקט</th>
-                    <th>שעות</th>
-                    <th>תמונה</th>
-                    <th>פעולות</th>
-                </tr>
-            </thead>
-            <tbody id="logTableBody"></tbody>
-        </table>
+    <div id="screen-settings" class="screen">
+        <h2>⚙️ הגדרות</h2>
+        <div class="card">
+            <label>שם המפקח:</label>
+            <input type="text" id="inspectorName" placeholder="הכנס את שמך" onchange="localStorage.setItem('inspectorName', this.value)">
+            <p style="font-size: 12px; color: #666;">כל המידע נשמר באופן מקומי על המכשיר שלך בלבד.</p>
+            <hr>
+            <button class="btn btn-danger" style="opacity: 0.7;" onclick="clearAllData()">מחק את כל הנתונים 🗑️</button>
+        </div>
     </div>
-    
-    <button class="btn" style="background:#2c3e50; color:white; margin-top:20px;" onclick="exportToCSV()">הורד דוח אקסל (CSV) 📥</button>
-</div>
 
-<div id="reportModal" class="modal">
-    <div class="modal-content">
-        <h3>📝 סיכום ביקור</h3>
-        <input type="text" id="projectName" placeholder="שם הפרויקט/אתר">
-        <textarea id="workDone" rows="3" placeholder="מה בדקנו היום?"></textarea>
-        <label>צרף תמונת ליקוי/ביצוע:</label>
-        <input type="file" id="imageInput" accept="image/*" capture="environment">
-        <button class="btn btn-start" onclick="saveWork()">שמור דיווח</button>
-        <button class="btn" style="background:#95a5a6; color:white;" onclick="closeModal()">ביטול</button>
+    <nav class="nav-bar">
+        <button class="nav-item active" onclick="showScreen('home', this)"><span>🏠</span>בית</button>
+        <button class="nav-item" onclick="showScreen('reports', this)"><span>📊</span>דוחות</button>
+        <button class="nav-item" onclick="showScreen('settings', this)"><span>⚙️</span>הגדרות</button>
+    </nav>
+
+    <div id="lightbox" class="lightbox" onclick="this.style.display='none'">
+        <img id="lightboxImg">
+        <button class="btn" style="width:auto; margin-top:10px;">סגור</button>
     </div>
-</div>
 
 <script>
-    let logs = JSON.parse(localStorage.getItem('pro_supervision_logs')) || [];
-    let startTime = localStorage.getItem('active_start');
+    let logs = JSON.parse(localStorage.getItem('supervisor_data')) || [];
+    let startTime = localStorage.getItem('active_start_time');
     let timerInterval;
 
-    function startWork() {
-        startTime = new Date().toISOString();
-        localStorage.setItem('active_start', startTime);
-        uiStateRunning();
+    // ניווט
+    function showScreen(screenId, btn) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById('screen-' + screenId).classList.add('active');
+        document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        if(screenId === 'reports') renderReports();
     }
 
-    function uiStateRunning() {
+    // ניהול זמן
+    function toggleTimer() {
+        if (!startTime) {
+            startTime = new Date().toISOString();
+            localStorage.setItem('active_start_time', startTime);
+            startUI();
+        }
+    }
+
+    function startUI() {
         document.getElementById('startBtn').style.display = 'none';
         document.getElementById('stopBtn').style.display = 'block';
-        timerInterval = setInterval(updateClock, 1000);
+        document.getElementById('statusText').innerText = "פיקוח פעיל...";
+        timerInterval = setInterval(updateTimer, 1000);
     }
 
-    function updateClock() {
+    function updateTimer() {
         const diff = new Date() - new Date(startTime);
         const h = Math.floor(diff / 3600000).toString().padStart(2, '0');
         const m = Math.floor((diff % 3600000) / 60000).toString().padStart(2, '0');
         const s = Math.floor((diff % 60000) / 1000).toString().padStart(2, '0');
-        document.getElementById('timerDisplay').innerText = `${h}:${m}:${s}`;
+        document.getElementById('mainTimer').innerText = `${h}:${m}:${s}`;
     }
 
-    function openReportModal() { document.getElementById('reportModal').style.display = 'flex'; }
-    function closeModal() { document.getElementById('reportModal').style.display = 'none'; }
+    function showReportModal() {
+        document.getElementById('reportArea').style.display = 'block';
+        document.getElementById('stopBtn').disabled = true;
+    }
 
-    async function saveWork() {
-        const fileInput = document.getElementById('imageInput');
-        let imageData = "";
-        
-        if (fileInput.files && fileInput.files[0]) {
-            imageData = await toBase64(fileInput.files[0]);
-        }
+    async function saveReport() {
+        const fileInput = document.getElementById('imageFiles');
+        const imagePromises = Array.from(fileInput.files).map(file => toBase64(file));
+        const images = await Promise.all(imagePromises);
 
         const end = new Date();
         const start = new Date(startTime);
         
-        const newEntry = {
+        const entry = {
             id: Date.now(),
-            date: start.toISOString().split('T')[0],
-            displayDate: start.toLocaleDateString('he-IL'),
-            project: document.getElementById('projectName').value || "כללי",
-            desc: document.getElementById('workDone').value || "",
-            hours: ((end - start) / 3600000).toFixed(2),
-            image: imageData
+            project: document.getElementById('projectName').value || "ללא שם",
+            notes: document.getElementById('workNotes').value || "",
+            date: start.toLocaleDateString('he-IL'),
+            duration: ((end - start) / 3600000).toFixed(2),
+            images: images
         };
 
-        logs.push(newEntry);
-        localStorage.setItem('pro_supervision_logs', JSON.stringify(logs));
+        logs.push(entry);
+        localStorage.setItem('supervisor_data', JSON.stringify(logs));
         
-        // Reset
-        clearInterval(timerInterval);
-        localStorage.removeItem('active_start');
-        startTime = null;
-        location.reload(); // רענון פשוט לעדכון הכל
+        // איפוס
+        localStorage.removeItem('active_start_time');
+        location.reload();
     }
 
-    const toBase64 = file => new Promise((resolve, reject) => {
+    const toBase64 = file => new Promise((resolve) => {
         const reader = new FileReader();
         reader.readAsDataURL(file);
         reader.onload = () => resolve(reader.result);
-        reader.onerror = error => reject(error);
     });
 
-    function renderTable() {
-        const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-        const dateFilter = document.getElementById('dateFilter').value;
-        const tbody = document.getElementById('logTableBody');
-        tbody.innerHTML = '';
+    // הצגת דוחות
+    function renderReports() {
+        const search = document.getElementById('searchInput').value.toLowerCase();
+        const container = document.getElementById('reportsList');
+        container.innerHTML = '';
 
-        logs.filter(log => {
-            const matchesSearch = log.project.toLowerCase().includes(searchTerm) || log.desc.toLowerCase().includes(searchTerm);
-            const matchesDate = !dateFilter || log.date === dateFilter;
-            return matchesSearch && matchesDate;
-        }).reverse().forEach(log => {
-            tbody.innerHTML += `<tr>
-                <td>${log.displayDate}</td>
-                <td><strong>${log.project}</strong><br><small>${log.desc}</small></td>
-                <td>${log.hours}</td>
-                <td>${log.image ? `<img src="${log.image}" class="img-preview" onclick="window.open('${log.image}')">` : '-'}</td>
-                <td><button onclick="deleteLog(${log.id})" style="color:red; background:none; border:none;">🗑️</button></td>
-            </tr>`;
+        logs.filter(l => l.project.toLowerCase().includes(search)).reverse().forEach(log => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.innerHTML = `
+                <div style="display:flex; justify-content:space-between; font-weight:bold;">
+                    <span>${log.project}</span>
+                    <span>${log.date}</span>
+                </div>
+                <p>${log.notes}</p>
+                <div style="color:var(--accent)">⏱️ ${log.duration} שעות</div>
+                <div class="img-grid">${log.images.map(img => `<img src="${img}" class="thumbnail" onclick="openLightbox('${img}')">`).join('')}</div>
+                <button onclick="deleteLog(${log.id})" style="color:red; background:none; border:none; margin-top:10px; cursor:pointer;">מחק דיווח 🗑️</button>
+            `;
+            container.appendChild(card);
         });
     }
 
+    function openLightbox(src) {
+        document.getElementById('lightboxImg').src = src;
+        document.getElementById('lightbox').style.display = 'flex';
+    }
+
     function deleteLog(id) {
-        if(confirm("למחוק דיווח זה?")) {
+        if(confirm("למחוק?")) {
             logs = logs.filter(l => l.id !== id);
-            localStorage.setItem('pro_supervision_logs', JSON.stringify(logs));
-            renderTable();
+            localStorage.setItem('supervisor_data', JSON.stringify(logs));
+            renderReports();
         }
     }
 
     function exportToCSV() {
-        let csv = "\uFEFFתאריך,פרויקט,תיאור,שעות\n";
-        logs.forEach(l => { csv += `${l.displayDate},"${l.project}","${l.desc}",${l.hours}\n`; });
+        let csv = "\uFEFFתאריך,פרויקט,שעות,הערות\n";
+        logs.forEach(l => { csv += `${l.date},"${l.project}",${l.duration},"${l.notes}"\n`; });
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
-        link.download = `דוח_פיקוח_בניה.csv`;
+        link.download = `דוח_שעות_${new Date().toLocaleDateString()}.csv`;
         link.click();
     }
 
-    if (startTime) uiStateRunning();
-    renderTable();
+    function clearAllData() {
+        if(confirm("זהירות! זה ימחק את כל היסטוריית העבודה. להמשיך?")) {
+            localStorage.clear();
+            location.reload();
+        }
+    }
+
+    // טעינה ראשונית
+    if (startTime) startUI();
+    document.getElementById('inspectorName').value = localStorage.getItem('inspectorName') || "";
+
 </script>
 </body>
 </html>
